@@ -1,0 +1,1212 @@
+dabir singh.txt
+
+import os
+import pandas as pd
+from sklearn.model_selection import train_test_split
+from sklearn.ensemble import GradientBoostingRegressor
+from sklearn.metrics import mean_squared_error
+import matplotlib.pyplot as plt
+import shap  # For SHAP values
+from sklearn.inspection import plot_partial_dependence
+from sklearn.tree import DecisionTreeRegressor
+from scipy.stats import norm
+import numpy as np
+
+# Set directory paths
+directory = "/home/user/projects/shap"
+directory_path = r"C:\Users\copyr\Desktop\ML model\ML dataset"
+
+# Set file names in the correct order
+file_names = [
+    'btc_1h.csv', 'btc_2h.csv', 'btc_3m.csv', 'btc_4h.csv',
+    'btc_5m.csv', 'btc_6h.csv', 'btc_15m.csv', 'btc_30m.csv'
+]
+
+# Function to load and concatenate data
+def load_and_concatenate(file_paths):
+    data_frames = [pd.read_csv(file_path) for file_path in file_paths]
+    return pd.concat(data_frames, ignore_index=True)
+
+# Load and concatenate the data
+file_paths = [os.path.join(directory_path, file_name) for file_name in file_names]
+df = load_and_concatenate(file_paths)
+
+# Assuming 'close' is your target variable
+X = df[['open', 'high', 'low', 'volume']]  # Replace with your actual feature columns
+y = df['close']  # Replace 'close' with your actual target column
+
+# Split the data into training and testing sets
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+# Train a Gradient Boosting Regressor model
+model = GradientBoostingRegressor(n_estimators=100, random_state=42)
+model.fit(X_train, y_train)
+
+# Make predictions on the test set
+y_pred = model.predict(X_test)
+
+# Calculate Mean Squared Error
+mse = mean_squared_error(y_test, y_pred)
+
+
+
+
+
+PART 1 
+
+
+# import the required modules 
+
+import os 
+import numpy as np
+import pandas as pd 
+import math 
+import datetime as dt 
+import matplotlib.pyplot as plt 
+
+# using scikit learn for model evaluation
+
+from sklearn.metrics import mean_squared_error, mean_absolute_error, explained_variance_score, r2_score
+from sklearn.metrics import mean_poisson_deviance, mean_gamma_deviance, accuracy_score
+from sklearn.preprocessing import MinMaxScaler 
+
+# using tensorflow for buidling the model 
+
+import tensorflow as tf
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import Dense, Dropout
+from tensorflow.keras.layers import LSTM
+
+# using these libraries for plotting
+
+import matplotlib.pyplot as plt
+from itertools import cycle
+import plotly.graph_objects as go
+import plotly.express as px
+from plotly.subplots import make_subplots
+
+maindf = pd.read_csv('btc_1h.csv')
+maindf = pd.read_csv('btc_2h.csv')
+maindf = pd.read_csv('btc_3m.csv')
+maindf = pd.read_csv('btc_4h.csv')
+maindf = pd.read_csv('btc_5m.csv')
+maindf = pd.read_csv('btc_6h.csv')
+maindf = pd.read_csv('btc_15m.csv')
+maindf = pd.read_csv('btc_30m.csv')
+
+print("total number of the days present in the datset are: ", maindf.shape[0])
+print("total number of fields present in the dataset are: ", maindf.shape[1])
+
+
+maindf.shape
+
+maindf.describe()
+
+maindf.info()
+
+maindf.head() 
+
+maindf.tail() 
+
+print("The null values are: ", maindf.isnull().values.sum())
+print("NA Values? : ", maindf.isnull().values.any()) # should return false if there are no NULL Values. 
+
+
+"""
+# if null values are to be found later, use the following code to remove them!
+
+maindf = maindf.dropna()
+print("Null values: ", maindf.isnull().values.sum())
+print("NA values: ", maindf.isnull().values.any())
+
+"""
+
+start_date = maindf.iloc[0][0]
+end_date = maindf.iloc[-1][0]
+
+print("Starting date is: ", start_date)
+print("Ending date is: ", end_date)
+
+
+# 2018 Analysis 
+
+maindf['datetime'] = pd.to_datetime(maindf['datetime'], format='%Y-%m-%d %H:%M:%S')  # Adjust the format as needed
+
+y_2018 = maindf.loc[(maindf['datetime'] >= '2018-01-01') & (maindf['datetime'] < '2019-01-01')]
+
+# Drop specified columns and assign the result back to y_2018
+y_2018 = y_2018.drop(['volume'], axis=1)
+
+"""
+
+the code prepares the data for analysis by converting the date column to a datetime format,
+Filtering the data to include only the year 2018
+removing the 'Adj Close' and 'Volume' columns from the filtered data. 
+The final result is stored in the DataFrame y_2018.
+
+"""
+
+import pandas as pd
+
+# Define the list of dataset file names
+dataset_files = ["btc_1h.csv", "btc_2h.csv", "btc_3m.csv", "btc_4h.csv", "btc_5m.csv", "btc_6h.csv", "btc_15m.csv", "btc_30m.csv"]
+
+# Loop through each dataset file
+for file in dataset_files:
+    # Load the data
+    dataset = pd.read_csv(file)  
+    
+    # Convert 'datetime' column to datetime format
+    dataset['datetime'] = pd.to_datetime(dataset['datetime'])
+    
+    # Filter data for the year 2018
+    dataset_2018 = dataset[dataset['datetime'].dt.year == 2018]
+    
+    # Set 'datetime' column as the index
+    dataset_2018.set_index('datetime', inplace=True)
+
+    # Extract the time interval from the file name
+    time_interval = file.split('_')[-1].split('.')[0]
+
+    # Print the last five rows for each dataset in 2018
+    print(f"Last five rows for {time_interval} in 2018:")
+    print(dataset_2018.tail())
+    print("\n" + "="*50 + "\n")  # Separate results for each dataset
+
+
+import pandas as pd
+
+def preprocess_dataset(dataset, time_interval='1H', year=None):
+    # Add a condition to filter data for a specific year
+    if year is not None:
+        dataset = dataset[dataset.index.year == year]
+
+    # Assuming 'Close' column is the closing prices in the dataset
+    dataset['open'] = dataset['close'].shift(1)
+
+    # Fill NaN in the first row with the initial closing price (you may choose another strategy)
+    dataset['open'].fillna(dataset['close'][0], inplace=True)
+
+    # Filter data based on the provided time interval
+    dataset_filtered = dataset.resample(time_interval).last()
+
+    # Drop NaN rows that might occur due to resampling
+    dataset_filtered = dataset_filtered.dropna()
+
+    # Group by month and calculate mean
+    monthwise = dataset_filtered.groupby(dataset_filtered.index.month)[['open', 'close']].mean()
+
+    # Ensure all months are present in the results
+    all_months = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
+    monthwise = monthwise.reindex(all_months)
+
+    # Rename the index to month names
+    monthwise.index = monthwise.index.map({1: 'January', 2: 'February', 3: 'March', 4: 'April', 5: 'May', 6: 'June',
+                                           7: 'July', 8: 'August', 9: 'September', 10: 'October', 11: 'November', 12: 'December'})
+
+    # Add year information to the results
+    monthwise['Year'] = year
+
+    return monthwise
+
+# Define the list of dataset file names
+dataset_files = ["btc_1h.csv", "btc_2h.csv", "btc_3m.csv", "btc_4h.csv", "btc_5m.csv", "btc_6h.csv", "btc_15m.csv", "btc_30m.csv"]
+
+# Loop through each dataset file
+for file in dataset_files:
+    # Load the data
+    dataset = pd.read_csv(file)  
+    
+    # Set 'datetime' column as the index
+    dataset['datetime'] = pd.to_datetime(dataset['datetime'])
+    dataset.set_index('datetime', inplace=True)
+
+    # Extract the time interval from the file name
+    time_interval = file.split('_')[-1].split('.')[0]
+
+    # Preprocess the data for the year 2018
+    result = preprocess_dataset(dataset, time_interval=time_interval, year=2018)
+
+    # Print the result
+    print(f"Results for {time_interval} in 2018:")
+    print(result)
+    print("\n" + "="*50 + "\n")  # Separate results for each dataset
+
+
+
+import plotly.graph_objects as go
+import pandas as pd
+
+# Define the order of months
+new_order = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
+
+# List of dataset file names
+dataset_files = ["btc_1h.csv", "btc_2h.csv", "btc_3m.csv", "btc_4h.csv", "btc_5m.csv", "btc_6h.csv", "btc_15m.csv", "btc_30m.csv"]
+
+# Define colors for each dataset
+colors = ['rgb(0, 128, 0)', 'rgb(255, 165, 0)', 'rgb(0, 0, 128)', 'rgb(128, 0, 0)', 'rgb(128, 0, 128)', 'rgb(0, 128, 128)', 'rgb(255, 0, 0)', 'rgb(0, 255, 0)']
+
+# Create an empty figure
+fig = go.Figure()
+
+# Loop through each dataset file
+for file, color in zip(dataset_files, colors):
+    # Load the data
+    dataset = pd.read_csv(file)
+    
+    # Convert 'datetime' column to datetime format
+    dataset['datetime'] = pd.to_datetime(dataset['datetime'])
+    
+    # Filter data for the year 2018
+    dataset_2018 = dataset[dataset['datetime'].dt.year == 2018]
+
+    # Calculate monthwise mean closing prices
+    monthwise_mean = dataset_2018.groupby(dataset_2018['datetime'].dt.strftime('%B'))['close'].mean()
+    monthwise_mean = monthwise_mean.reindex(new_order, axis=0)
+
+    # Add traces to the figure with different colors
+    fig.add_trace(go.Bar(
+        x=monthwise_mean.index,
+        y=monthwise_mean,
+        name=f'{file} Mean Closing Price',
+        marker_color=color
+    ))
+
+# Update layout and show the figure
+fig.update_layout(barmode="group",
+                  title='Monthwise Mean Closing Price of Bitcoin (All Datasets) - 2018',
+                  xaxis_title='Month',
+                  yaxis_title='Mean Closing Price')
+
+fig.show()
+
+# mean is being calculated using the closing price for the bar graph
+
+
+# comparison between the mean and the original closing price 
+import plotly.graph_objects as go
+import pandas as pd
+
+# Define the order of months
+new_order = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
+
+# List of dataset file names
+dataset_files = ["btc_1h.csv", "btc_2h.csv", "btc_3m.csv", "btc_4h.csv", "btc_5m.csv", "btc_6h.csv", "btc_15m.csv", "btc_30m.csv"]
+
+# Define colors for each dataset
+colors = ['rgb(0, 128, 0)', 'rgb(255, 165, 0)', 'rgb(0, 0, 128)', 'rgb(128, 0, 0)', 'rgb(128, 0, 128)', 'rgb(0, 128, 128)', 'rgb(255, 0, 0)', 'rgb(0, 255, 0)']
+
+# Create an empty figure
+fig = go.Figure()
+
+# Loop through each dataset file
+for file, color in zip(dataset_files, colors):
+    # Load the data
+    dataset = pd.read_csv(file)
+    
+    # Convert 'datetime' column to datetime format
+    dataset['datetime'] = pd.to_datetime(dataset['datetime'])
+    
+    # Filter data for the year 2020
+    dataset_2018 = dataset[dataset['datetime'].dt.year == 2018]
+
+    # Calculate monthwise mean closing prices
+    monthwise_mean = dataset_2018.groupby(dataset_2018['datetime'].dt.strftime('%B'))['close'].mean()
+    monthwise_mean = monthwise_mean.reindex(new_order, axis=0)
+
+    # Calculate monthwise original closing prices
+    monthwise_original = dataset_2018.groupby(dataset_2018['datetime'].dt.strftime('%B'))['close'].last()
+    monthwise_original = monthwise_original.reindex(new_order, axis=0)
+
+    # Add traces to the figure with different colors for mean and original
+    fig.add_trace(go.Bar(
+        x=monthwise_mean.index,
+        y=monthwise_mean,
+        name=f'{file} Mean Closing Price',
+        marker_color=color,
+        opacity=0.7  # Adjust opacity for better visibility of both bars
+    ))
+
+    fig.add_trace(go.Bar(
+        x=monthwise_original.index,
+        y=monthwise_original,
+        name=f'{file} Original Closing Price',
+        marker_color=color,
+        opacity=0.5  # Adjust opacity for better visibility of both bars
+    ))
+
+# Update layout and show the figure
+fig.update_layout(barmode="group",
+                  title='Monthwise Closing Prices of Bitcoin (Mean and Original) - 2018',
+                  xaxis_title='Month',
+                  yaxis_title='Closing Price')
+
+fig.show()
+
+
+
+
+
+import plotly.express as px
+from itertools import cycle
+
+# Assuming 'datetime' is already in datetime format
+maindf['open'] = maindf['close'].shift(1)
+maindf['open'].fillna(maindf['close'][0], inplace=True)
+
+# Filter data for a specific year (e.g., 2018)
+year_filter = (maindf['datetime'] >= '2018-01-01') & (maindf['datetime'] < '2019-01-01')
+filtered_data = maindf.loc[year_filter]
+
+# Display 'volume' in the printed output for the filtered data
+print(filtered_data[['datetime', 'open', 'high', 'low', 'close', 'volume']].head())
+
+# Plotting using Plotly Express for the filtered data
+names = cycle(['Bitcoin Open Price', 'Bitcoin Close Price', 'Bitcoin High Price', 'Bitcoin Low Price', 'Bitcoin Volume'])
+
+fig = px.line(filtered_data, x=filtered_data['datetime'], y=[filtered_data['open'], filtered_data['close'], filtered_data['high'], filtered_data['low'], filtered_data['volume']],
+              labels={'datetime': 'datetime', 'value': 'Stock Value'})
+
+fig.update_layout(title_text='Bitcoin Analysis Chart (2018)', font_size=15, font_color='black',
+                  legend_title_text='Bitcoin Parameters')
+
+fig.for_each_trace(lambda t: t.update(name=next(names)))
+fig.update_xaxes(showgrid=False)
+fig.update_yaxes(showgrid=False)
+
+fig.show()
+
+maindf['datetime'] = pd.to_datetime(maindf['datetime'], format='%Y-%m-%d %H:%M:%S')  # Adjust the format as needed
+
+y_2019 = maindf.loc[(maindf['datetime'] >= '2019-01-01') & (maindf['datetime'] < '2020-01-01')]
+
+# Drop specified columns and assign the result back to y_2019
+y_2019 = y_2019.drop(['volume'], axis=1)
+
+"""
+
+the code prepares the data for analysis by converting the date column to a datetime format,
+Filtering the data to include only the year 2019
+removing the 'Adj Close' and 'Volume' columns from the filtered data. 
+The final result is stored in the DataFrame y_2019.
+
+"""
+
+import pandas as pd
+
+# Define the list of dataset file names
+dataset_files = ["btc_1h.csv", "btc_2h.csv", "btc_3m.csv", "btc_4h.csv", "btc_5m.csv", "btc_6h.csv", "btc_15m.csv", "btc_30m.csv"]
+
+# Loop through each dataset file
+for file in dataset_files:
+    # Load the data
+    dataset = pd.read_csv(file)  
+    
+    # Convert 'datetime' column to datetime format
+    dataset['datetime'] = pd.to_datetime(dataset['datetime'])
+    
+    # Filter data for the year 2018
+    dataset_2019 = dataset[dataset['datetime'].dt.year == 2019]
+    
+    # Set 'datetime' column as the index
+    dataset_2019.set_index('datetime', inplace=True)
+
+    # Extract the time interval from the file name
+    time_interval = file.split('_')[-1].split('.')[0]
+
+    # Print the last five rows for each dataset in 2018
+    print(f"Last five rows for {time_interval} in 2019:")
+    print(dataset_2019.tail())
+    print("\n" + "="*50 + "\n")  # Separate results for each dataset
+
+
+import pandas as pd
+
+def preprocess_dataset(dataset, time_interval='1H', year=None):
+    # Add a condition to filter data for a specific year
+    if year is not None:
+        dataset = dataset[dataset.index.year == year]
+
+    # Assuming 'Close' column is the closing prices in the dataset
+    dataset['open'] = dataset['close'].shift(1)
+
+    # Fill NaN in the first row with the initial closing price (you may choose another strategy)
+    dataset['open'].fillna(dataset['close'][0], inplace=True)
+
+    # Filter data based on the provided time interval
+    dataset_filtered = dataset.resample(time_interval).last()
+
+    # Drop NaN rows that might occur due to resampling
+    dataset_filtered = dataset_filtered.dropna()
+
+    # Group by month and calculate mean
+    monthwise = dataset_filtered.groupby(dataset_filtered.index.month)[['open', 'close']].mean()
+
+    # Ensure all months are present in the results
+    all_months = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
+    monthwise = monthwise.reindex(all_months)
+
+    # Rename the index to month names
+    monthwise.index = monthwise.index.map({1: 'January', 2: 'February', 3: 'March', 4: 'April', 5: 'May', 6: 'June',
+                                           7: 'July', 8: 'August', 9: 'September', 10: 'October', 11: 'November', 12: 'December'})
+
+    # Add year information to the results
+    monthwise['Year'] = year
+
+    return monthwise
+
+# Define the list of dataset file names
+dataset_files = ["btc_1h.csv", "btc_2h.csv", "btc_3m.csv", "btc_4h.csv", "btc_5m.csv", "btc_6h.csv", "btc_15m.csv", "btc_30m.csv"]
+
+# Loop through each dataset file
+for file in dataset_files:
+    # Load the data
+    dataset = pd.read_csv(file)  
+    
+    # Set 'datetime' column as the index
+    dataset['datetime'] = pd.to_datetime(dataset['datetime'])
+    dataset.set_index('datetime', inplace=True)
+
+    # Extract the time interval from the file name
+    time_interval = file.split('_')[-1].split('.')[0]
+
+    # Preprocess the data for the year 2018
+    result = preprocess_dataset(dataset, time_interval=time_interval, year=2019)
+
+    # Print the result
+    print(f"Results for {time_interval} in 2019:")
+    print(result)
+    print("\n" + "="*50 + "\n")  # Separate results for each dataset
+
+
+import plotly.graph_objects as go
+import pandas as pd
+
+# Define the order of months
+new_order = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
+
+# List of dataset file names
+dataset_files = ["btc_1h.csv", "btc_2h.csv", "btc_3m.csv", "btc_4h.csv", "btc_5m.csv", "btc_6h.csv", "btc_15m.csv", "btc_30m.csv"]
+
+# Define colors for each dataset
+colors = ['rgb(0, 128, 0)', 'rgb(255, 165, 0)', 'rgb(0, 0, 128)', 'rgb(128, 0, 0)', 'rgb(128, 0, 128)', 'rgb(0, 128, 128)', 'rgb(255, 0, 0)', 'rgb(0, 255, 0)']
+
+# Create an empty figure
+fig = go.Figure()
+
+# Loop through each dataset file
+for file, color in zip(dataset_files, colors):
+    # Load the data
+    dataset = pd.read_csv(file)
+    
+    # Convert 'datetime' column to datetime format
+    dataset['datetime'] = pd.to_datetime(dataset['datetime'])
+    
+    # Filter data for the year 2018
+    dataset_2019 = dataset[dataset['datetime'].dt.year == 2019]
+
+    # Calculate monthwise mean closing prices
+    monthwise_mean = dataset_2019.groupby(dataset_2019['datetime'].dt.strftime('%B'))['close'].mean()
+    monthwise_mean = monthwise_mean.reindex(new_order, axis=0)
+
+    # Add traces to the figure with different colors
+    fig.add_trace(go.Bar(
+        x=monthwise_mean.index,
+        y=monthwise_mean,
+        name=f'{file} Mean Closing Price',
+        marker_color=color
+    ))
+
+# Update layout and show the figure
+fig.update_layout(barmode="group",
+                  title='Monthwise Mean Closing Price of Bitcoin (All Datasets) - 2019',
+                  xaxis_title='Month',
+                  yaxis_title='Mean Closing Price')
+
+fig.show()
+
+# mean is being calculated using the closing price for the bar graph
+
+# comparison between the mean and the original closing price 
+import plotly.graph_objects as go
+import pandas as pd
+
+# Define the order of months
+new_order = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
+
+# List of dataset file names
+dataset_files = ["btc_1h.csv", "btc_2h.csv", "btc_3m.csv", "btc_4h.csv", "btc_5m.csv", "btc_6h.csv", "btc_15m.csv", "btc_30m.csv"]
+
+# Define colors for each dataset
+colors = ['rgb(0, 128, 0)', 'rgb(255, 165, 0)', 'rgb(0, 0, 128)', 'rgb(128, 0, 0)', 'rgb(128, 0, 128)', 'rgb(0, 128, 128)', 'rgb(255, 0, 0)', 'rgb(0, 255, 0)']
+
+# Create an empty figure
+fig = go.Figure()
+
+# Loop through each dataset file
+for file, color in zip(dataset_files, colors):
+    # Load the data
+    dataset = pd.read_csv(file)
+    
+    # Convert 'datetime' column to datetime format
+    dataset['datetime'] = pd.to_datetime(dataset['datetime'])
+    
+    # Filter data for the year 2020
+    dataset_2019 = dataset[dataset['datetime'].dt.year == 2019]
+
+    # Calculate monthwise mean closing prices
+    monthwise_mean = dataset_2019.groupby(dataset_2019['datetime'].dt.strftime('%B'))['close'].mean()
+    monthwise_mean = monthwise_mean.reindex(new_order, axis=0)
+
+    # Calculate monthwise original closing prices
+    monthwise_original = dataset_2019.groupby(dataset_2019['datetime'].dt.strftime('%B'))['close'].last()
+    monthwise_original = monthwise_original.reindex(new_order, axis=0)
+
+    # Add traces to the figure with different colors for mean and original
+    fig.add_trace(go.Bar(
+        x=monthwise_mean.index,
+        y=monthwise_mean,
+        name=f'{file} Mean Closing Price',
+        marker_color=color,
+        opacity=0.7  # Adjust opacity for better visibility of both bars
+    ))
+
+    fig.add_trace(go.Bar(
+        x=monthwise_original.index,
+        y=monthwise_original,
+        name=f'{file} Original Closing Price',
+        marker_color=color,
+        opacity=0.5  # Adjust opacity for better visibility of both bars
+    ))
+
+# Update layout and show the figure
+fig.update_layout(barmode="group",
+                  title='Monthwise Closing Prices of Bitcoin (Mean and Original) - 2019',
+                  xaxis_title='Month',
+                  yaxis_title='Closing Price')
+
+fig.show()
+
+
+import plotly.express as px
+from itertools import cycle
+
+# Assuming 'datetime' is already in datetime format
+maindf['open'] = maindf['close'].shift(1)
+maindf['open'].fillna(maindf['close'][0], inplace=True)
+
+# Filter data for a specific year (e.g., 2018)
+year_filter = (maindf['datetime'] >= '2019-01-01') & (maindf['datetime'] < '2019-12-31')
+filtered_data = maindf.loc[year_filter]
+
+# Display 'volume' in the printed output for the filtered data
+print(filtered_data[['datetime', 'open', 'high', 'low', 'close', 'volume']].head())
+
+# Plotting using Plotly Express for the filtered data
+names = cycle(['Bitcoin Open Price', 'Bitcoin Close Price', 'Bitcoin High Price', 'Bitcoin Low Price', 'Bitcoin Volume'])
+
+fig = px.line(filtered_data, x=filtered_data['datetime'], y=[filtered_data['open'], filtered_data['close'], filtered_data['high'], filtered_data['low'], filtered_data['volume']],
+              labels={'datetime': 'datetime', 'value': 'Stock Value'})
+
+fig.update_layout(title_text='Bitcoin Analysis Chart (2019)', font_size=15, font_color='black',
+                  legend_title_text='Bitcoin Parameters')
+
+fig.for_each_trace(lambda t: t.update(name=next(names)))
+fig.update_xaxes(showgrid=False)
+fig.update_yaxes(showgrid=False)
+
+fig.show()
+
+
+PART 2
+
+# Analysis of 2020
+
+maindf['datetime'] = pd.to_datetime(maindf['datetime'], format='%Y-%m-%d %H:%M:%S')  # Adjust the format as needed
+
+y_2020 = maindf.loc[(maindf['datetime'] >= '2020-01-01') & (maindf['datetime'] < '2021-01-01')]
+
+# Drop specified columns and assign the result back to y_2019
+y_2020 = y_2020.drop(['volume'], axis=1)
+
+"""
+
+the code prepares the data for analysis by converting the date column to a datetime format,
+Filtering the data to include only the year 2019
+removing the 'Adj Close' and 'Volume' columns from the filtered data. 
+The final result is stored in the DataFrame y_2020
+
+"""
+
+
+import pandas as pd
+
+# Define the list of dataset file names
+dataset_files = ["btc_1h.csv", "btc_2h.csv", "btc_3m.csv", "btc_4h.csv", "btc_5m.csv", "btc_6h.csv", "btc_15m.csv", "btc_30m.csv"]
+
+# Loop through each dataset file
+for file in dataset_files:
+    # Load the data
+    dataset = pd.read_csv(file)  
+    
+    # Convert 'datetime' column to datetime format
+    dataset['datetime'] = pd.to_datetime(dataset['datetime'])
+    
+    # Filter data for the year 2020
+    dataset_2020 = dataset[dataset['datetime'].dt.year == 2020]
+    
+    # Set 'datetime' column as the index
+    dataset_2020.set_index('datetime', inplace=True)
+
+    # Extract the time interval from the file name
+    time_interval = file.split('_')[-1].split('.')[0]
+
+    # Print the last five rows for each dataset in 2020
+    print(f"Last five rows for {time_interval} in 2020:")
+    print(dataset_2020.tail())
+    print("\n" + "="*50 + "\n")  # Separate results for each dataset
+
+
+import pandas as pd
+
+def preprocess_dataset(dataset, time_interval='1H', year=None):
+    # Add a condition to filter data for a specific year
+    if year is not None:
+        dataset = dataset[dataset.index.year == year]
+
+    # Assuming 'Close' column is the closing prices in the dataset
+    dataset['open'] = dataset['close'].shift(1)
+
+    # Fill NaN in the first row with the initial closing price (you may choose another strategy)
+    dataset['open'].fillna(dataset['close'][0], inplace=True)
+
+    # Filter data based on the provided time interval
+    dataset_filtered = dataset.resample(time_interval).last()
+
+    # Drop NaN rows that might occur due to resampling
+    dataset_filtered = dataset_filtered.dropna()
+
+    # Group by month and calculate mean
+    monthwise = dataset_filtered.groupby(dataset_filtered.index.month)[['open', 'close']].mean()
+
+    # Ensure all months are present in the results
+    all_months = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
+    monthwise = monthwise.reindex(all_months)
+
+    # Rename the index to month names
+    monthwise.index = monthwise.index.map({1: 'January', 2: 'February', 3: 'March', 4: 'April', 5: 'May', 6: 'June',
+                                           7: 'July', 8: 'August', 9: 'September', 10: 'October', 11: 'November', 12: 'December'})
+
+    # Add year information to the results
+    monthwise['Year'] = year
+
+    return monthwise
+
+# Define the list of dataset file names
+dataset_files = ["btc_1h.csv", "btc_2h.csv", "btc_3m.csv", "btc_4h.csv", "btc_5m.csv", "btc_6h.csv", "btc_15m.csv", "btc_30m.csv"]
+
+# Loop through each dataset file
+for file in dataset_files:
+    # Load the data
+    dataset = pd.read_csv(file)  
+    
+    # Set 'datetime' column as the index
+    dataset['datetime'] = pd.to_datetime(dataset['datetime'])
+    dataset.set_index('datetime', inplace=True)
+
+    # Extract the time interval from the file name
+    time_interval = file.split('_')[-1].split('.')[0]
+
+    # Preprocess the data for the year 2018
+    result = preprocess_dataset(dataset, time_interval=time_interval, year=2020)
+
+    # Print the result
+    print(f"Results for {time_interval} in 2020:")
+    print(result)
+    print("\n" + "="*50 + "\n")  # Separate results for each dataset
+
+
+import plotly.graph_objects as go
+import pandas as pd
+
+# Define the order of months
+new_order = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
+
+# List of dataset file names
+dataset_files = ["btc_1h.csv", "btc_2h.csv", "btc_3m.csv", "btc_4h.csv", "btc_5m.csv", "btc_6h.csv", "btc_15m.csv", "btc_30m.csv"]
+
+# Define colors for each dataset
+colors = ['rgb(0, 128, 0)', 'rgb(255, 165, 0)', 'rgb(0, 0, 128)', 'rgb(128, 0, 0)', 'rgb(128, 0, 128)', 'rgb(0, 128, 128)', 'rgb(255, 0, 0)', 'rgb(0, 255, 0)']
+
+# Create an empty figure
+fig = go.Figure()
+
+# Loop through each dataset file
+for file, color in zip(dataset_files, colors):
+    # Load the data
+    dataset = pd.read_csv(file)
+    
+    # Convert 'datetime' column to datetime format
+    dataset['datetime'] = pd.to_datetime(dataset['datetime'])
+    
+    # Filter data for the year 2020
+    dataset_2020 = dataset[dataset['datetime'].dt.year == 2020]
+
+    # Calculate monthwise mean closing prices
+    monthwise_mean = dataset_2020.groupby(dataset_2020['datetime'].dt.strftime('%B'))['close'].mean()
+    monthwise_mean = monthwise_mean.reindex(new_order, axis=0)
+
+    # Add traces to the figure with different colors
+    fig.add_trace(go.Bar(
+        x=monthwise_mean.index,
+        y=monthwise_mean,
+        name=f'{file} Mean Closing Price',
+        marker_color=color
+    ))
+
+# Update layout and show the figure
+fig.update_layout(barmode="group",
+                  title='Monthwise Mean Closing Price of Bitcoin (All Datasets) - 2020',
+                  xaxis_title='Month',
+                  yaxis_title='Mean Closing Price')
+
+fig.show()
+
+# mean is being calculated using the closing price for the bar graph
+
+
+# comparison between the mean and the original closing price 
+import plotly.graph_objects as go
+import pandas as pd
+
+# Define the order of months
+new_order = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
+
+# List of dataset file names
+dataset_files = ["btc_1h.csv", "btc_2h.csv", "btc_3m.csv", "btc_4h.csv", "btc_5m.csv", "btc_6h.csv", "btc_15m.csv", "btc_30m.csv"]
+
+# Define colors for each dataset
+colors = ['rgb(0, 128, 0)', 'rgb(255, 165, 0)', 'rgb(0, 0, 128)', 'rgb(128, 0, 0)', 'rgb(128, 0, 128)', 'rgb(0, 128, 128)', 'rgb(255, 0, 0)', 'rgb(0, 255, 0)']
+
+# Create an empty figure
+fig = go.Figure()
+
+# Loop through each dataset file
+for file, color in zip(dataset_files, colors):
+    # Load the data
+    dataset = pd.read_csv(file)
+    
+    # Convert 'datetime' column to datetime format
+    dataset['datetime'] = pd.to_datetime(dataset['datetime'])
+    
+    # Filter data for the year 2020
+    dataset_2020 = dataset[dataset['datetime'].dt.year == 2020]
+
+    # Calculate monthwise mean closing prices
+    monthwise_mean = dataset_2020.groupby(dataset_2020['datetime'].dt.strftime('%B'))['close'].mean()
+    monthwise_mean = monthwise_mean.reindex(new_order, axis=0)
+
+    # Calculate monthwise original closing prices
+    monthwise_original = dataset_2020.groupby(dataset_2020['datetime'].dt.strftime('%B'))['close'].last()
+    monthwise_original = monthwise_original.reindex(new_order, axis=0)
+
+    # Add traces to the figure with different colors for mean and original
+    fig.add_trace(go.Bar(
+        x=monthwise_mean.index,
+        y=monthwise_mean,
+        name=f'{file} Mean Closing Price',
+        marker_color=color,
+        opacity=0.7  # Adjust opacity for better visibility of both bars
+    ))
+
+    fig.add_trace(go.Bar(
+        x=monthwise_original.index,
+        y=monthwise_original,
+        name=f'{file} Original Closing Price',
+        marker_color=color,
+        opacity=0.5  # Adjust opacity for better visibility of both bars
+    ))
+
+# Update layout and show the figure
+fig.update_layout(barmode="group",
+                  title='Monthwise Closing Prices of Bitcoin (Mean and Original) - 2020',
+                  xaxis_title='Month',
+                  yaxis_title='Closing Price')
+
+fig.show()
+
+
+import plotly.express as px
+from itertools import cycle
+
+# Assuming 'datetime' is already in datetime format
+maindf['open'] = maindf['close'].shift(1)
+maindf['open'].fillna(maindf['close'][0], inplace=True)
+
+# Filter data for a specific year (e.g., 2020)
+year_filter = (maindf['datetime'] >= '2020-01-01') & (maindf['datetime'] < '2020-12-31')
+filtered_data = maindf.loc[year_filter]
+
+# Display 'volume' in the printed output for the filtered data
+print(filtered_data[['datetime', 'open', 'high', 'low', 'close', 'volume']].head())
+
+# Plotting using Plotly Express for the filtered data
+names = cycle(['Bitcoin Open Price', 'Bitcoin Close Price', 'Bitcoin High Price', 'Bitcoin Low Price', 'Bitcoin Volume'])
+
+fig = px.line(filtered_data, x=filtered_data['datetime'], y=[filtered_data['open'], filtered_data['close'], filtered_data['high'], filtered_data['low'], filtered_data['volume']],
+              labels={'datetime': 'datetime', 'value': 'Stock Value'})
+
+fig.update_layout(title_text='Bitcoin Analysis Chart (2020)', font_size=15, font_color='black',
+                  legend_title_text='Bitcoin Parameters')
+
+fig.for_each_trace(lambda t: t.update(name=next(names)))
+fig.update_xaxes(showgrid=False)
+fig.update_yaxes(showgrid=False)
+
+fig.show()
+
+
+# analysis of 2021
+
+maindf['datetime'] = pd.to_datetime(maindf['datetime'], format='%Y-%m-%d %H:%M:%S')  # Adjust the format as needed
+
+y_2021 = maindf.loc[(maindf['datetime'] >= '2021-01-01') & (maindf['datetime'] < '2022-01-31')]
+
+# Drop specified columns and assign the result back to y_2019
+y_2021 = y_2021.drop(['volume'], axis=1)
+
+"""
+
+the code prepares the data for analysis by converting the date column to a datetime format,
+Filtering the data to include only the year 2019
+removing the 'Adj Close' and 'Volume' columns from the filtered data. 
+The final result is stored in the DataFrame y_2020
+
+"""
+
+import pandas as pd
+
+# Define the list of dataset file names
+dataset_files = ["btc_1h.csv", "btc_2h.csv", "btc_3m.csv", "btc_4h.csv", "btc_5m.csv", "btc_6h.csv", "btc_15m.csv", "btc_30m.csv"]
+
+# Loop through each dataset file
+for file in dataset_files:
+    # Load the data
+    dataset = pd.read_csv(file)  
+    
+    # Convert 'datetime' column to datetime format
+    dataset['datetime'] = pd.to_datetime(dataset['datetime'])
+    
+    # Filter data for the year 2021
+    dataset_2021 = dataset[dataset['datetime'].dt.year == 2021]
+    
+    # Set 'datetime' column as the index
+    dataset_2021.set_index('datetime', inplace=True)
+
+    # Extract the time interval from the file name
+    time_interval = file.split('_')[-1].split('.')[0]
+
+    # Print the last five rows for each dataset in 2021
+    print(f"Last five rows for {time_interval} in 2021:")
+    print(dataset_2021.tail())
+    print("\n" + "="*50 + "\n")  # Separate results for each dataset
+
+
+import pandas as pd
+
+def preprocess_dataset(dataset, time_interval='1H', year=None):
+    # Add a condition to filter data for a specific year
+    if year is not None:
+        dataset = dataset[dataset.index.year == year]
+
+    # Assuming 'Close' column is the closing prices in the dataset
+    dataset['open'] = dataset['close'].shift(1)
+
+    # Fill NaN in the first row with the initial closing price (you may choose another strategy)
+    dataset['open'].fillna(dataset['close'][0], inplace=True)
+
+    # Filter data based on the provided time interval
+    dataset_filtered = dataset.resample(time_interval).last()
+
+    # Drop NaN rows that might occur due to resampling
+    dataset_filtered = dataset_filtered.dropna()
+
+    # Group by month and calculate mean
+    monthwise = dataset_filtered.groupby(dataset_filtered.index.month)[['open', 'close']].mean()
+
+    # Ensure all months are present in the results
+    all_months = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
+    monthwise = monthwise.reindex(all_months)
+
+    # Rename the index to month names
+    monthwise.index = monthwise.index.map({1: 'January', 2: 'February', 3: 'March', 4: 'April', 5: 'May', 6: 'June',
+                                           7: 'July', 8: 'August', 9: 'September', 10: 'October', 11: 'November', 12: 'December'})
+
+    # Add year information to the results
+    monthwise['Year'] = year
+
+    return monthwise
+
+# Define the list of dataset file names
+dataset_files = ["btc_1h.csv", "btc_2h.csv", "btc_3m.csv", "btc_4h.csv", "btc_5m.csv", "btc_6h.csv", "btc_15m.csv", "btc_30m.csv"]
+
+# Loop through each dataset file
+for file in dataset_files:
+    # Load the data
+    dataset = pd.read_csv(file)  
+    
+    # Set 'datetime' column as the index
+    dataset['datetime'] = pd.to_datetime(dataset['datetime'])
+    dataset.set_index('datetime', inplace=True)
+
+    # Extract the time interval from the file name
+    time_interval = file.split('_')[-1].split('.')[0]
+
+    # Preprocess the data for the year 2018
+    result = preprocess_dataset(dataset, time_interval=time_interval, year=2021)
+
+    # Print the result
+    print(f"Results for {time_interval} in 2021:")
+    print(result)
+    print("\n" + "="*50 + "\n")  # Separate results for each dataset
+
+
+import plotly.graph_objects as go
+import pandas as pd
+
+# Define the order of months
+new_order = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
+
+# List of dataset file names
+dataset_files = ["btc_1h.csv", "btc_2h.csv", "btc_3m.csv", "btc_4h.csv", "btc_5m.csv", "btc_6h.csv", "btc_15m.csv", "btc_30m.csv"]
+
+# Define colors for each dataset
+colors = ['rgb(0, 128, 0)', 'rgb(255, 165, 0)', 'rgb(0, 0, 128)', 'rgb(128, 0, 0)', 'rgb(128, 0, 128)', 'rgb(0, 128, 128)', 'rgb(255, 0, 0)', 'rgb(0, 255, 0)']
+
+# Create an empty figure
+fig = go.Figure()
+
+# Loop through each dataset file
+for file, color in zip(dataset_files, colors):
+    # Load the data
+    dataset = pd.read_csv(file)
+    
+    # Convert 'datetime' column to datetime format
+    dataset['datetime'] = pd.to_datetime(dataset['datetime'])
+    
+    # Filter data for the year 2020
+    dataset_2021 = dataset[dataset['datetime'].dt.year == 2021]
+
+    # Calculate monthwise mean closing prices
+    monthwise_mean = dataset_2020.groupby(dataset_2020['datetime'].dt.strftime('%B'))['close'].mean()
+    monthwise_mean = monthwise_mean.reindex(new_order, axis=0)
+
+    # Add traces to the figure with different colors
+    fig.add_trace(go.Bar(
+        x=monthwise_mean.index,
+        y=monthwise_mean,
+        name=f'{file} Mean Closing Price',
+        marker_color=color
+    ))
+
+# Update layout and show the figure
+fig.update_layout(barmode="group",
+                  title='Monthwise Mean Closing Price of Bitcoin (All Datasets) - 2021',
+                  xaxis_title='Month',
+                  yaxis_title='Mean Closing Price')
+
+fig.show()
+
+# mean is being calculated using the closing price for the bar graph
+
+
+
+# comparison between the mean and the original closing price 
+import plotly.graph_objects as go
+import pandas as pd
+
+# Define the order of months
+new_order = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
+
+# List of dataset file names
+dataset_files = ["btc_1h.csv", "btc_2h.csv", "btc_3m.csv", "btc_4h.csv", "btc_5m.csv", "btc_6h.csv", "btc_15m.csv", "btc_30m.csv"]
+
+# Define colors for each dataset
+colors = ['rgb(0, 128, 0)', 'rgb(255, 165, 0)', 'rgb(0, 0, 128)', 'rgb(128, 0, 0)', 'rgb(128, 0, 128)', 'rgb(0, 128, 128)', 'rgb(255, 0, 0)', 'rgb(0, 255, 0)']
+
+# Create an empty figure
+fig = go.Figure()
+
+# Loop through each dataset file
+for file, color in zip(dataset_files, colors):
+    # Load the data
+    dataset = pd.read_csv(file)
+    
+    # Convert 'datetime' column to datetime format
+    dataset['datetime'] = pd.to_datetime(dataset['datetime'])
+    
+    # Filter data for the year 2020
+    dataset_2021 = dataset[dataset['datetime'].dt.year == 2021]
+
+    # Calculate monthwise mean closing prices
+    monthwise_mean = dataset_2021.groupby(dataset_2021['datetime'].dt.strftime('%B'))['close'].mean()
+    monthwise_mean = monthwise_mean.reindex(new_order, axis=0)
+
+    # Calculate monthwise original closing prices
+    monthwise_original = dataset_2021.groupby(dataset_2021['datetime'].dt.strftime('%B'))['close'].last()
+    monthwise_original = monthwise_original.reindex(new_order, axis=0)
+
+    # Add traces to the figure with different colors for mean and original
+    fig.add_trace(go.Bar(
+        x=monthwise_mean.index,
+        y=monthwise_mean,
+        name=f'{file} Mean Closing Price',
+        marker_color=color,
+        opacity=0.7  # Adjust opacity for better visibility of both bars
+    ))
+
+    fig.add_trace(go.Bar(
+        x=monthwise_original.index,
+        y=monthwise_original,
+        name=f'{file} Original Closing Price',
+        marker_color=color,
+        opacity=0.5  # Adjust opacity for better visibility of both bars
+    ))
+
+# Update layout and show the figure
+fig.update_layout(barmode="group",
+                  title='Monthwise Closing Prices of Bitcoin (Mean and Original) - 2021',
+                  xaxis_title='Month',
+                  yaxis_title='Closing Price')
+
+fig.show()
+
+import plotly.express as px
+from itertools import cycle
+
+# Assuming 'datetime' is already in datetime format
+maindf['open'] = maindf['close'].shift(1)
+maindf['open'].fillna(maindf['close'][0], inplace=True)
+
+# Filter data for a specific year (e.g., 2021)
+year_filter = (maindf['datetime'] >= '2021-01-01') & (maindf['datetime'] < '2022-12-31')
+filtered_data = maindf.loc[year_filter]
+
+# Display 'volume' in the printed output for the filtered data
+print(filtered_data[['datetime', 'open', 'high', 'low', 'close', 'volume']].head())
+
+# Plotting using Plotly Express for the filtered data
+names = cycle(['Bitcoin Open Price', 'Bitcoin Close Price', 'Bitcoin High Price', 'Bitcoin Low Price', 'Bitcoin Volume'])
+
+fig = px.line(filtered_data, x=filtered_data['datetime'], y=[filtered_data['open'], filtered_data['close'], filtered_data['high'], filtered_data['low'], filtered_data['volume']],
+              labels={'datetime': 'datetime', 'value': 'Stock Value'})
+
+fig.update_layout(title_text='Bitcoin Analysis Chart (2021)', font_size=15, font_color='black',
+                  legend_title_text='Bitcoin Parameters')
+
+fig.for_each_trace(lambda t: t.update(name=next(names)))
+fig.update_xaxes(showgrid=False)
+fig.update_yaxes(showgrid=False)
+
+fig.show()
+
+# Overall 2018-2022 analysis - 
+
+maindf['datetime'] = pd.to_datetime(maindf['datetime'], format='%Y-%m-%d')
+
+y_overall = maindf.loc[(maindf['datetime'] >= '2018-01-01') & (maindf['datetime'] <= '2022-01-31')]
+
+# Drop the 'Volume' column
+y_overall.drop(['volume'], axis=1, inplace=True)
+
+
+monthwise= y_overall.groupby(y_overall['datetime'].dt.strftime('%B'))[['open','close']].mean()
+new_order = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 
+             'September', 'October', 'November', 'December']
+monthwise = monthwise.reindex(new_order, axis=0)
+
+
+# Assuming 'Date' column is in datetime format
+maindf['datetime'] = pd.to_datetime(maindf['datetime'], format='%Y-%m-%d')
+
+# Assuming y_overall is the overall DataFrame you want to use
+y_overall = maindf.copy()  # You may need to modify this based on your specific requirements
+
+names = cycle(['Bitcoin Opening Price', 'Bitcoin Closing Price', 'Bitcoin Highest Price', 'Bitcoin Lowest Price'])
+
+fig = px.line(y_overall, x=y_overall['datetime'], y=[y_overall['open'], y_overall['close'],
+                                                 y_overall['high'], y_overall['low']],
+              labels={'datetime': 'Date', 'value': 'Stock value'})
+fig.update_layout(title_text='Bitcoin/USDT Analysis Chart', font_size=15, font_color='black',
+                  legend_title_text='Stock Parameters')
+fig.for_each_trace(lambda t: t.update(name=next(names)))
+fig.update_xaxes(showgrid=False)
+fig.update_yaxes(showgrid=False)
+
+fig.show()
+
+monthwise
+
+
+
+import os
+import pandas as pd
+from sklearn.model_selection import train_test_split
+from sklearn.svm import SVR
+from sklearn.metrics import mean_squared_error
+from bokeh.plotting import figure, show
+from bokeh.palettes import Turbo256  # Option for customizable color palettes
+
+# Set directory path
+directory_path = r"C:\Users\Smit Joshi\Music\BTCUSDT model"
+
+# Set file names in the correct order
+file_names = [
+    'btc_1h.csv', 'btc_2h.csv', 'btc_3m.csv', 'btc_4h.csv',
+    'btc_5m.csv', 'btc_6h.csv', 'btc_15m.csv', 'btc_30m.csv'
+]
+
+# Function to load and concatenate data
+def load_and_concatenate(file_paths):
+    data_frames = [pd.read_csv(file_path) for file_path in file_paths]
+    return pd.concat(data_frames, ignore_index=True)
+
+# Load and concatenate the data
+file_paths = [os.path.join(directory_path, file_name) for file_name in file_names]
+df = load_and_concatenate(file_paths)
+
+# Assuming 'close' is your target variable
+X = df[['open', 'high', 'low', 'volume']]  # Replace with your actual feature columns
+y = df['close']  # Replace 'close' with your actual target column
+
+# Split the data into training and testing sets
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+# Train an SVM regression model
+model = SVR(kernel='linear')  # You can explore other kernels like 'rbf' or 'poly'
+model.fit(X_train, y_train)
+
+# Make predictions on the test set
+y_pred = model.predict(X_test)
+
+# Calculate Mean Squared Error
+mse = mean_squared_error(y_test, y_pred)
+
+# Create a Bokeh figure
+p = figure(title="Actual vs Predicted", x_axis_label="Actual", y_axis_label="Predicted")
+
+# Scatter plot of actual vs predicted values
+p.scatter(x=y_test, y=y_pred, size=8, color=Turbo256[0], alpha=0.7)
+
+# Add a line of equality for reference
+p.line([min(y_test), max(y_test)], [min(y_test), max(y_test)], line_dash="dashed", line_width=2, color="red")
+
+# Add interactive features
+p.x_range.start = min(y_test) - 0.1 * min(y_test)
+p.x_range.end = max(y_test) + 0.1 * max(y_test)
+p.y_range.start = min(y_pred) - 0.1 * min(y_pred)
+p.y_range.end = max(y_pred) + 0.1 * max(y_pred)
+
+# Crucial for displaying the plot:
+show(p)  # Display the interactive Bokeh plot
+
